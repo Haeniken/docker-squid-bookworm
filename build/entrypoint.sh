@@ -3,12 +3,12 @@ set -euo pipefail
 
 SQUID_BIN="$(command -v squid)"
 CONF_DIR="/etc/squid/conf.d"
-CONF_GLOB="${CONF_DIR}"/*.conf
+CONF_FILES=( "${CONF_DIR}"/*.conf )
 PID_FILE="/var/run/squid/squid.pid"
 SHUTTING_DOWN=0
 
 has_cache_dir() {
-  grep -Eqs '^[[:space:]]*cache_dir[[:space:]]' /etc/squid/squid.conf ${CONF_GLOB} 2>/dev/null
+  grep -Eqs '^[[:space:]]*cache_dir[[:space:]]' /etc/squid/squid.conf "${CONF_FILES[@]}" 2>/dev/null
 }
 
 on_term() {
@@ -35,7 +35,7 @@ if [[ -z ${1:-} ]]; then
     echo "Run on host: sudo ./scripts/init.sh --perms-only --user \"\$USER\"" >&2
     exit 1
   fi
-  if ! compgen -G "${CONF_GLOB}" > /dev/null; then
+  if ! compgen -G "${CONF_DIR}/*.conf" > /dev/null; then
     echo "ERROR: no *.conf files found in ${CONF_DIR}" >&2
     echo "Run on host: ./scripts/init.sh --copy-only" >&2
     exit 1
@@ -45,8 +45,8 @@ if [[ -z ${1:-} ]]; then
   "${SQUID_BIN}" -k parse -f /etc/squid/squid.conf
 
   if [[ ! -d ${SQUID_CACHE_DIR}/ssl_db ]]; then
-    /usr/lib/squid/security_file_certgen -c -s ${SQUID_CACHE_DIR}/ssl_db -M 4MB
-    chown -R ${SQUID_USER}:${SQUID_USER} ${SQUID_CACHE_DIR}/ssl_db
+    /usr/lib/squid/security_file_certgen -c -s "${SQUID_CACHE_DIR}/ssl_db" -M 4MB
+    chown -R "${SQUID_USER}:${SQUID_USER}" "${SQUID_CACHE_DIR}/ssl_db"
   fi
   if has_cache_dir && [[ ! -d ${SQUID_CACHE_DIR}/00 ]]; then
     echo "Initializing cache..."
