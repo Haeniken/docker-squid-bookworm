@@ -1,13 +1,14 @@
 # Squid Docker Setup
 
 [![Docker](https://img.shields.io/badge/Docker-Ready-2496ED?style=flat-square&logo=docker)](https://www.docker.com/)
+[![Docker Compose](https://img.shields.io/badge/Compose-v2-2496ED?style=flat-square&logo=docker)](https://docs.docker.com/compose/)
 [![Debian](https://img.shields.io/badge/Debian-12%20Bookworm-A81D33?style=flat-square&logo=debian)](https://www.debian.org/)
 [![Squid](https://img.shields.io/badge/Squid-5.7-2E8B57?style=flat-square)](http://www.squid-cache.org/)
-[![OpenSSL](https://img.shields.io/badge/OpenSSL-enabled-721412?style=flat-square&logo=openssl)](https://www.openssl.org/)
-[![Docker Compose](https://img.shields.io/badge/Compose-v2-2496ED?style=flat-square&logo=docker)](https://docs.docker.com/compose/)
+[![OpenSSL](https://img.shields.io/badge/OpenSSL-enabled-721412?style=flat-square&logo=openssl)](https://www.openssl.org/)<br/>
 [![Docker Image CI](https://github.com/Haeniken/docker-squid-bookworm/actions/workflows/docker-image.yml/badge.svg)](https://github.com/Haeniken/docker-squid-bookworm/actions/workflows/docker-image.yml)
 [![Lint](https://github.com/Haeniken/docker-squid-bookworm/actions/workflows/lint.yml/badge.svg)](https://github.com/Haeniken/docker-squid-bookworm/actions/workflows/lint.yml)
 [![Security Scan](https://github.com/Haeniken/docker-squid-bookworm/actions/workflows/security.yml/badge.svg)](https://github.com/Haeniken/docker-squid-bookworm/actions/workflows/security.yml)
+[![Publish](https://github.com/Haeniken/docker-squid-bookworm/actions/workflows/publish.yml/badge.svg)](https://github.com/Haeniken/docker-squid-bookworm/actions/workflows/publish.yml)
 
 [🇺🇸 English](README.md) | [🇷🇺 Русский](README.ru.md)
 
