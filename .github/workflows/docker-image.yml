@@ -2,19 +2,28 @@ name: Docker Image CI
 
 on:
   push:
-    branches: [ "main" ]
+    branches: ["main"]
     paths:
       - "build/**"
+      - "scripts/**"
+      - "conf.d.example/**"
+      - "docker-compose.yml"
       - ".github/workflows/docker-image.yml"
   pull_request:
-    branches: [ "main" ]
+    branches: ["main"]
     paths:
       - "build/**"
+      - "scripts/**"
+      - "conf.d.example/**"
+      - "docker-compose.yml"
       - ".github/workflows/docker-image.yml"
+  workflow_dispatch:
 
 jobs:
   build:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
 
     steps:
       - name: Checkout
@@ -34,5 +43,6 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-      - name: Smoke test (squid config parse)
+      - name: Smoke test (config parse)
         run: docker run --rm --entrypoint /usr/sbin/squid local/squid:ci -k parse -f /etc/squid/squid.conf
+

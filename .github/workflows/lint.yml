@@ -1,0 +1,35 @@
+name: Lint
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
+  workflow_dispatch:
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install lint tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends shellcheck yamllint
+
+      - name: ShellCheck
+        run: |
+          shellcheck scripts/init.sh
+          shellcheck build/entrypoint.sh
+
+      - name: yamllint
+        run: yamllint -d relaxed docker-compose.yml .github/workflows/*.yml
+
+      - name: actionlint
+        run: docker run --rm -v "$PWD:/repo" -w /repo rhysd/actionlint:latest
+
