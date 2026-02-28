@@ -70,6 +70,10 @@ docker exec squid squid -k parse
 Эта сборка поддерживает реальный SMP-режим (больше одного воркера), если в `conf.d/20-performance.conf` задано `workers`.
 Правило: значение `workers` не должно превышать количество доступных CPU-ядер контейнера/хоста.
 
+В этом репозитории `cache_dir` намеренно отключен при `workers 2`.
+Причина: общий UFS `cache_dir` при `workers > 1` может вызывать assertion/restart loop воркеров (`Controller.cc:930`).
+Если нужен дисковый кэш, переключитесь на `workers 1` и снова включите `cache_dir`.
+
 Проверка ролей процессов:
 
 ```bash
@@ -91,7 +95,27 @@ docker exec squid sh -lc "ps -eo pid,ppid,user,cmd | grep '[s]quid'"
 - `/var/log/squid/connect.log` - успешный CONNECT-трафик в подробном формате.
 - `/var/log/squid/http.log` - успешный non-CONNECT HTTP-трафик в подробном формате.
 
-Ротация задана прямо в `access_log ... rotate=7`, поэтому `logfile_rotate` из Debian это не перезапишет.
+В подробных логах используется читаемое поле времени (`ts=`) в стиле Nginx: `YYYY-MM-DD HH:MM:SS TZ` (настроено через `logformat detailed` в `conf.d/99-logging.conf`).
+
+Логи Squid пишутся как обычные файлы (`access.log`, `denied.log`, `connect.log`, `http.log`) без ротации внутри контейнера. Ротацию делайте на хосте.
+
+`./scripts/init.sh --perms-only` (или полный режим) создаёт/обновляет:
+
+```conf
+/home/container/docker/squid/logs/*.log {
+    su root root
+    daily
+    rotate 7
+    compress
+    delaycompress
+    missingok
+    notifempty
+    create 0660 13 13
+    copytruncate
+}
+```
+
+На практике скрипт подставляет фактический путь проекта и выбранные `--squid-uid/--squid-gid`.
 
 ## Как узнать UID/GID Squid в контейнере
 
@@ -101,38 +125,93 @@ docker exec squid sh -lc 'id proxy; getent passwd proxy'
 
 Если UID/GID отличаются, передайте их в `scripts/init.sh`.
 
-## Пуш в репозиторий без утечки приватного `conf.d`
-
-```bash
-git status
-git check-ignore -v conf.d/*
-```
-
-Если `conf.d` уже был в индексе:
-
-```bash
-git rm --cached -r conf.d
-```
-
-Далее пуш:
-
-```bash
-git add .
-git commit -m "squid: private conf.d flow + unified init script"
-git branch -M main
-git remote add origin <URL_ВАШЕГО_РЕПО>
-git push -u origin main
-```
 
 ## Troubleshooting / Диагностика
 
-`FATAL: Unable to find configuration file: /etc/squid/conf.d/*.conf`
+Быстрый чек-лист из 5 команд:
 
-- Причина: на хосте пустой или отсутствует `./conf.d`; bind mount скрывает дефолтные конфиги из образа.
-- Решение:
+```bash
+dc ps
+docker logs squid --tail=200
+docker exec squid squid -k parse -f /etc/squid/squid.conf
+docker exec squid sh -lc "grep -R --line-number '^workers\\|^cache_dir\\|^http_access' /etc/squid/conf.d/*.conf"
+curl -x 172.20.6.4:3128 https://jsonplaceholder.typicode.com/todos/1
+```
+
+1. Быстрая проверка реального трафика
+
+Позитивный тест (публичный API через прокси):
+
+```bash
+curl -x 172.20.6.4:3128 https://jsonplaceholder.typicode.com/todos/1
+```
+
+Ожидаемый ответ:
+
+```json
+{"userId":1,"id":1,"title":"delectus aut autem","completed":false}
+```
+
+Негативный тест (ACL-запрет небезопасного порта):
+
+```bash
+curl -x 172.20.6.4:3128 http://example.com:210/
+```
+
+Ожидаемый результат:
+- клиент получает `403 Forbidden`;
+- в access.log Squid есть запись `TCP_DENIED/403`.
+
+2. `FATAL: Unable to find configuration file: /etc/squid/conf.d/*.conf`
+
+Причина: на хосте пустой или отсутствует `./conf.d`; bind mount скрывает дефолтные конфиги из образа.
+
+Решение:
 
 ```bash
 ./scripts/init.sh --copy-only
 sudo ./scripts/init.sh --perms-only --user "$USER"
 dc up -d --build
 ```
+
+3. `curl: (7) Failed to connect ... Connection refused`
+
+Причина: контейнер не запущен/падает, либо порт `3128` не опубликован/недоступен.
+
+Решение:
+
+```bash
+dc ps
+docker logs squid --tail=200
+ss -ltn | grep 3128
+```
+
+4. Цикл рестартов с `assertion failed: Controller.cc:930`
+
+Причина: `workers > 1` и общий UFS `cache_dir`.
+
+Решение:
+- оставить `workers 2` и отключить `cache_dir` (дефолт в этом репозитории), или
+- поставить `workers 1`, если нужен дисковый кэш.
+
+5. Неожиданный `TCP_DENIED/403` для разрешенных клиентов
+
+Причина: исходный IP не попадает под `acl localnet` в `conf.d/10-access.conf`.
+
+Решение:
+- добавить реальный source IP/CIDR клиента в `acl localnet`;
+- перепроверить конфиг и перезапустить контейнер.
+
+6. Permission denied на файлах cache/logs
+
+Причина: неверные права/ACL на хостовых `./data/cache` и `./logs`.
+
+Решение:
+
+```bash
+sudo ./scripts/init.sh --perms-only --user "$USER"
+```
+
+7. `WARNING: no_suid: setuid(0): (1) Operation not permitted`
+
+Это ожидаемое предупреждение для текущего hardened non-root запуска контейнера.

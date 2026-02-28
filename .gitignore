@@ -13,7 +13,9 @@
 # Local env/compose overrides
 .env
 .env.*
+!.env.example
 docker-compose.override.yml
+READMETECH.md
 
 # IDE/editor files
 .idea/

@@ -79,6 +79,7 @@ EXAMPLE_DIR="${PROJECT_DIR}/conf.d.example"
 TARGET_CONF_DIR="${PROJECT_DIR}/conf.d"
 CACHE_DIR="${PROJECT_DIR}/data/cache"
 LOGS_DIR="${PROJECT_DIR}/logs"
+LOGROTATE_FILE="/etc/logrotate.d/squid-docker"
 
 copy_configs() {
   mkdir -p "${TARGET_CONF_DIR}"
@@ -156,9 +157,27 @@ apply_permissions() {
   setfacl -R -m "u:${SQUID_UID}:rwX,u:${TARGET_USER}:rX" "${CACHE_DIR}" "${LOGS_DIR}"
   setfacl -dR -m "u:${SQUID_UID}:rwX,u:${TARGET_USER}:rX" "${CACHE_DIR}" "${LOGS_DIR}"
 
+  # Host logrotate policy for Squid bind-mounted logs.
+  # Uses numeric UID/GID to match container Squid user on host.
+  cat > "${LOGROTATE_FILE}" <<EOF
+${LOGS_DIR}/*.log {
+    su root root
+    daily
+    rotate 7
+    compress
+    delaycompress
+    missingok
+    notifempty
+    create 0660 ${SQUID_UID} ${SQUID_GID}
+    copytruncate
+}
+EOF
+  chmod 0644 "${LOGROTATE_FILE}"
+
   echo "Permissions done:"
   echo "  cache: ${CACHE_DIR}"
   echo "  logs:  ${LOGS_DIR}"
+  echo "  logrotate: ${LOGROTATE_FILE}"
 }
 
 if [[ "${MODE}" != "copy" && "${EUID}" -ne 0 ]]; then

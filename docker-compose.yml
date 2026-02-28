@@ -5,50 +5,47 @@ networks:
 
 services:
   squid:
+    image: haeniken/squid:5.7
     build:
       context: ./build
+      tags:
+        - haeniken/squid:latest
     restart: unless-stopped
     init: true
     container_name: squid
     hostname: squid
     ports:
       - "3128:3128"
+    environment:
+      - TZ=${TZ:-UTC}
+    read_only: true
+    tmpfs:
+      - /tmp:size=64M,mode=1777
     volumes:
       - ./data/cache:/var/spool/squid
       - ./logs:/var/log/squid
       - ./conf.d:/etc/squid/conf.d:ro
+      - squid-run:/var/run/squid
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    pids_limit: 100
+    ulimits:
+      nofile:
+        soft: 65535
+        hard: 65535
     healthcheck:
       test: ["CMD-SHELL", "/usr/sbin/squid -k check"]
       interval: 30s
       timeout: 5s
       retries: 3
       start_period: 10s
-    ulimits:
-      nofile:
-        soft: 65535
-        hard: 65535
-    security_opt:
-      - no-new-privileges:true
     logging:
       driver: json-file
       options:
-        max-size: "10m"
-        max-file: "5"
+        max-size: "50m"
+        max-file: "1"
 
-#  squid-exporter:
-#    image: boynux/squid-exporter
-#    container_name: squid-exporter
-#    environment:
-#      - SQUID_HOST=squid
-#      - SQUID_PORT=3128
-#    ports:
-#      - "9301:9301"
-#    depends_on:
-#      - squid
-#    labels:
-#     - "traefik.enable=true"
-#     - "traefik.http.routers.exporter-squid.rule=Host(`exporter-squid.wow2print.com`)"
-#     - "traefik.http.routers.exporter-squid.priority=10"
-#     - "traefik.http.routers.exporter-squid.service=exporter-squid-service"
-#     - "traefik.http.services.exporter-squid.loadbalancer.server.port=9301"
-#     - "traefik.http.routers.exporter-squid.middlewares=ipallowlist-exporters@file"
+volumes:
+  squid-run:
