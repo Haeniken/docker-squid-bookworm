@@ -50,7 +50,7 @@ jobs:
             # Always keep a moving latest tag for this workflow.
             type=raw,value=latest
             # On git tag vN (or vN.N.N), publish series-prefixed tag.
-            type=ref,event=tag,prefix=5.7-2-
+            type=ref,event=tag,prefix=6.13-2-
 
       - name: Build and push
         uses: docker/build-push-action@v6
@@ -60,6 +60,7 @@ jobs:
           build-args: |
             BUILD_DATE=${{ env.BUILD_DATE }}
             VCS_REF=${{ env.VCS_REF }}
+          pull: true
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}

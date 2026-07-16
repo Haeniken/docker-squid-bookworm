@@ -2,8 +2,8 @@
 
 [![Docker](https://img.shields.io/badge/Docker-Ready-2496ED?style=flat-square&logo=docker)](https://www.docker.com/)
 [![Docker Compose](https://img.shields.io/badge/Compose-v2-2496ED?style=flat-square&logo=docker)](https://docs.docker.com/compose/)
-[![Debian](https://img.shields.io/badge/Debian-12%20Bookworm-A81D33?style=flat-square&logo=debian)](https://www.debian.org/)
-[![Squid](https://img.shields.io/badge/Squid-5.7-2E8B57?style=flat-square)](http://www.squid-cache.org/)
+[![Debian](https://img.shields.io/badge/Debian-13%20Trixie-A81D33?style=flat-square&logo=debian)](https://www.debian.org/)
+[![Squid](https://img.shields.io/badge/Squid-6.13-2E8B57?style=flat-square)](http://www.squid-cache.org/)
 [![OpenSSL](https://img.shields.io/badge/OpenSSL-enabled-721412?style=flat-square&logo=openssl)](https://www.openssl.org/)<br/>
 [![Docker Image CI](https://github.com/Haeniken/docker-squid-bookworm/actions/workflows/docker-image.yml/badge.svg)](https://github.com/Haeniken/docker-squid-bookworm/actions/workflows/docker-image.yml)
 [![Lint](https://github.com/Haeniken/docker-squid-bookworm/actions/workflows/lint.yml/badge.svg)](https://github.com/Haeniken/docker-squid-bookworm/actions/workflows/lint.yml)
@@ -82,6 +82,7 @@ docker exec squid sh -lc "ps -eo pid,ppid,user,cmd | grep '[s]quid'"
 ```
 
 Ожидаемо при `workers 2`:
+
 - два процесса с ролью `worker` (`kid1`, `kid2`);
 - один процесс `coordinator`;
 - в parse-логе видна строка `workers 2`.
@@ -125,7 +126,6 @@ docker exec squid sh -lc 'id proxy; getent passwd proxy'
 
 Если UID/GID отличаются, передайте их в `scripts/init.sh`.
 
-
 ## Troubleshooting / Диагностика
 
 Быстрый чек-лист из 5 команд:
@@ -159,10 +159,11 @@ curl -x 172.20.6.4:3128 http://example.com:210/
 ```
 
 Ожидаемый результат:
+
 - клиент получает `403 Forbidden`;
 - в access.log Squid есть запись `TCP_DENIED/403`.
 
-2. `FATAL: Unable to find configuration file: /etc/squid/conf.d/*.conf`
+1. `FATAL: Unable to find configuration file: /etc/squid/conf.d/*.conf`
 
 Причина: на хосте пустой или отсутствует `./conf.d`; bind mount скрывает дефолтные конфиги из образа.
 
@@ -174,7 +175,7 @@ sudo ./scripts/init.sh --perms-only --user "$USER"
 dc up -d --build
 ```
 
-3. `curl: (7) Failed to connect ... Connection refused`
+1. `curl: (7) Failed to connect ... Connection refused`
 
 Причина: контейнер не запущен/падает, либо порт `3128` не опубликован/недоступен.
 
@@ -186,23 +187,25 @@ docker logs squid --tail=200
 ss -ltn | grep 3128
 ```
 
-4. Цикл рестартов с `assertion failed: Controller.cc:930`
+1. Цикл рестартов с `assertion failed: Controller.cc:930`
 
 Причина: `workers > 1` и общий UFS `cache_dir`.
 
 Решение:
+
 - оставить `workers 2` и отключить `cache_dir` (дефолт в этом репозитории), или
 - поставить `workers 1`, если нужен дисковый кэш.
 
-5. Неожиданный `TCP_DENIED/403` для разрешенных клиентов
+1. Неожиданный `TCP_DENIED/403` для разрешенных клиентов
 
 Причина: исходный IP не попадает под `acl localnet` в `conf.d/10-access.conf`.
 
 Решение:
+
 - добавить реальный source IP/CIDR клиента в `acl localnet`;
 - перепроверить конфиг и перезапустить контейнер.
 
-6. Permission denied на файлах cache/logs
+1. Permission denied на файлах cache/logs
 
 Причина: неверные права/ACL на хостовых `./data/cache` и `./logs`.
 
@@ -212,6 +215,6 @@ ss -ltn | grep 3128
 sudo ./scripts/init.sh --perms-only --user "$USER"
 ```
 
-7. `WARNING: no_suid: setuid(0): (1) Operation not permitted`
+1. `WARNING: no_suid: setuid(0): (1) Operation not permitted`
 
 Это ожидаемое предупреждение для текущего hardened non-root запуска контейнера.

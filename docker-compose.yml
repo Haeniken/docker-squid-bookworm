@@ -5,7 +5,7 @@ networks:
 
 services:
   squid:
-    image: haeniken/squid:5.7
+    image: haeniken/squid:6.13
     build:
       context: ./build
       tags:

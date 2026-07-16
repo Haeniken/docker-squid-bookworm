@@ -36,3 +36,16 @@ jobs:
 
       - name: actionlint
         run: docker run --rm -v "$PWD:/repo" -w /repo rhysd/actionlint:latest
+
+      - name: Hadolint
+        run: |
+          docker run --rm -i hadolint/hadolint:latest-debian \
+            < build/Dockerfile
+
+      - name: markdownlint
+        run: |
+          docker run --rm \
+            -v "$PWD:/workdir:ro" \
+            -w /workdir \
+            davidanson/markdownlint-cli2:latest \
+            README.md README.ru.md

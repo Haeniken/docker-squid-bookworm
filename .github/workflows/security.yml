@@ -67,6 +67,7 @@ jobs:
           build-args: |
             BUILD_DATE=${{ env.BUILD_DATE }}
             VCS_REF=${{ env.VCS_REF }}
+          pull: true
           push: false
           load: true
           tags: local/squid:scan

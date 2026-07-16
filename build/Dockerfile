@@ -1,15 +1,15 @@
 # syntax=docker/dockerfile:1
-FROM debian:bookworm-slim
+FROM debian:trixie-slim
 
 # --- Build Arguments for Metadata ---
 ARG BUILD_DATE
 ARG VCS_REF
-ARG SQUID_VERSION="5.7-2+deb12u5"
+ARG SQUID_VERSION="6.13-2+deb13u2"
 
 # --- OCI Standard Labels ---
 LABEL org.opencontainers.image.title="Squid Proxy" \
       org.opencontainers.image.description="Squid Proxy Cache with OpenSSL support" \
-      org.opencontainers.image.version="5.7" \
+      org.opencontainers.image.version="6.13" \
       org.opencontainers.image.vendor="Haeniken" \
       org.opencontainers.image.licenses="GPL" \
       org.opencontainers.image.source="https://github.com/Haeniken/docker-squid-bookworm" \
@@ -26,6 +26,9 @@ ENV SQUID_VERSION=${SQUID_VERSION} \
     DEBIAN_FRONTEND=noninteractive
 
 # --- Installation & Hardening ---
+# Debian package revisions follow the moving trixie-slim base. Pin Squid via
+# SQUID_VERSION, but let supporting packages resolve from the same snapshot.
+# hadolint ignore=DL3008
 RUN set -eux; \
   # 1. Update & Install
   apt-get update; \

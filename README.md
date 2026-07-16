@@ -2,8 +2,8 @@
 
 [![Docker](https://img.shields.io/badge/Docker-Ready-2496ED?style=flat-square&logo=docker)](https://www.docker.com/)
 [![Docker Compose](https://img.shields.io/badge/Compose-v2-2496ED?style=flat-square&logo=docker)](https://docs.docker.com/compose/)
-[![Debian](https://img.shields.io/badge/Debian-12%20Bookworm-A81D33?style=flat-square&logo=debian)](https://www.debian.org/)
-[![Squid](https://img.shields.io/badge/Squid-5.7-2E8B57?style=flat-square)](http://www.squid-cache.org/)
+[![Debian](https://img.shields.io/badge/Debian-13%20Trixie-A81D33?style=flat-square&logo=debian)](https://www.debian.org/)
+[![Squid](https://img.shields.io/badge/Squid-6.13-2E8B57?style=flat-square)](http://www.squid-cache.org/)
 [![OpenSSL](https://img.shields.io/badge/OpenSSL-enabled-721412?style=flat-square&logo=openssl)](https://www.openssl.org/)<br/>
 [![Docker Image CI](https://github.com/Haeniken/docker-squid-bookworm/actions/workflows/docker-image.yml/badge.svg)](https://github.com/Haeniken/docker-squid-bookworm/actions/workflows/docker-image.yml)
 [![Lint](https://github.com/Haeniken/docker-squid-bookworm/actions/workflows/lint.yml/badge.svg)](https://github.com/Haeniken/docker-squid-bookworm/actions/workflows/lint.yml)
@@ -82,6 +82,7 @@ docker exec squid sh -lc "ps -eo pid,ppid,user,cmd | grep '[s]quid'"
 ```
 
 Expected with `workers 2`:
+
 - two processes with role `worker` (`kid1`, `kid2`);
 - one `coordinator` process;
 - `workers 2` appears during config parse.
@@ -158,10 +159,11 @@ curl -x 172.20.6.4:3128 http://example.com:210/
 ```
 
 Expected result:
+
 - client receives `403 Forbidden`;
 - Squid access log contains `TCP_DENIED/403`.
 
-2. `FATAL: Unable to find configuration file: /etc/squid/conf.d/*.conf`
+1. `FATAL: Unable to find configuration file: /etc/squid/conf.d/*.conf`
 
 Cause: `./conf.d` is empty or missing on host; bind mount hides image defaults.
 
@@ -173,7 +175,7 @@ sudo ./scripts/init.sh --perms-only --user "$USER"
 dc up -d --build
 ```
 
-3. `curl: (7) Failed to connect ... Connection refused`
+1. `curl: (7) Failed to connect ... Connection refused`
 
 Cause: container is down/crashing, or port `3128` is not published/reachable.
 
@@ -185,23 +187,25 @@ docker logs squid --tail=200
 ss -ltn | grep 3128
 ```
 
-4. Restart loop with `assertion failed: Controller.cc:930`
+1. Restart loop with `assertion failed: Controller.cc:930`
 
 Cause: `workers > 1` with shared UFS `cache_dir`.
 
 Fix:
+
 - keep `workers 2` and disable `cache_dir` (current default in this repo), or
 - set `workers 1` if you need on-disk cache.
 
-5. Unexpected `TCP_DENIED/403` for allowed clients
+1. Unexpected `TCP_DENIED/403` for allowed clients
 
 Cause: source IP is not matched by `acl localnet` in `conf.d/10-access.conf`.
 
 Fix:
+
 - add the real client source IP/CIDR to `acl localnet`;
 - re-parse config and restart container.
 
-6. Permission denied on cache/log files
+1. Permission denied on cache/log files
 
 Cause: host ownership/ACL mismatch for mounted `./data/cache` and `./logs`.
 
@@ -211,6 +215,6 @@ Fix:
 sudo ./scripts/init.sh --perms-only --user "$USER"
 ```
 
-7. `WARNING: no_suid: setuid(0): (1) Operation not permitted`
+1. `WARNING: no_suid: setuid(0): (1) Operation not permitted`
 
 This warning is expected in this hardened non-root container setup.
