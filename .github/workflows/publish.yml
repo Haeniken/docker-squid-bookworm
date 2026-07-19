@@ -27,7 +27,9 @@ jobs:
         uses: docker/setup-buildx-action@v3
 
       - name: Compute image name
-        run: echo "IMAGE_NAME=ghcr.io/${GITHUB_REPOSITORY,,}" >> "$GITHUB_ENV"
+        run: |
+          image_name="ghcr.io/${GITHUB_REPOSITORY_OWNER,,}/docker-squid-trixie"
+          echo "IMAGE_NAME=$image_name" >> "$GITHUB_ENV"
 
       - name: Set build metadata
         run: |
