@@ -5,11 +5,11 @@ networks:
 
 services:
   squid:
-    image: haeniken/squid:6.13
+    image: ghcr.io/haeniken/docker-squid-debian:latest
     build:
       context: ./build
       tags:
-        - haeniken/squid:latest
+        - ghcr.io/haeniken/docker-squid-debian:latest
     restart: unless-stopped
     init: true
     container_name: squid
