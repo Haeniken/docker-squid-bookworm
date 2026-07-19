@@ -28,7 +28,7 @@ jobs:
 
       - name: Compute image name
         run: |
-          image_name="ghcr.io/${GITHUB_REPOSITORY_OWNER,,}/docker-squid-trixie"
+          image_name="ghcr.io/${GITHUB_REPOSITORY_OWNER,,}/docker-squid-debian"
           echo "IMAGE_NAME=$image_name" >> "$GITHUB_ENV"
 
       - name: Set build metadata
